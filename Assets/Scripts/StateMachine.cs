@@ -21,8 +21,14 @@ public class StateMachine : MonoBehaviour
     public BattleHUD enemyHUD;
     public BattleState state;
     public int difficultyLevel = 1;
+    public AudioClip _AttackSound;
+    public AudioClip _AttackESound;
+    public AudioClip _potiondrink;
+    public AudioClip _LevelUp;
+
     void Start()
     {
+
         state = BattleState.START;
         StartCoroutine(SetupBattle());
     }
@@ -35,7 +41,7 @@ public class StateMachine : MonoBehaviour
         playerUnit.potions += pots;
         playerHUD.SetPotions(playerUnit.potions);
         dialogueText.text = "You found " + pots + "potions.";
-
+        AudioHelper.PlayClip2D(_LevelUp, 1f);
         StartCoroutine(EnemySpawn());
     }
 
@@ -44,7 +50,7 @@ public class StateMachine : MonoBehaviour
         if (state != BattleState.REST)
             return;
         dialogueText.text = "You Leveled up!!!";
-
+        AudioHelper.PlayClip2D(_LevelUp, 1f);
         playerUnit.level += 1;
         playerUnit.Attack += Random.Range(1, 4);
         playerUnit.maxHP += 10;
@@ -112,11 +118,17 @@ public class StateMachine : MonoBehaviour
 
         int var = Random.RandomRange(-1, 3);
         bool isDead = enemyUnit.TakeDamage(playerUnit.Attack+var);
-
+        playerUnit.transform.position += new Vector3(0.25f, 0f, 0);
+        enemyUnit.transform.position += new Vector3(0, .25f, 0);
+        yield return new WaitForSeconds(.10f);
+        playerUnit.transform.position -= new Vector3(0.25f, 0f, 0);
+        enemyUnit.transform.position -= new Vector3(0, .50f, 0);
+        yield return new WaitForSeconds(.10f);
+        enemyUnit.transform.position += new Vector3(0, .25f, 0);
         enemyHUD.SetHP(enemyUnit.currentHP);
         var += playerUnit.Attack;
         dialogueText.text = "You hit for " + var + " damage!";
-
+        AudioHelper.PlayClip2D(_AttackSound, 1f);
         yield return new WaitForSeconds(2f);
 
         if (isDead)
@@ -155,14 +167,24 @@ public class StateMachine : MonoBehaviour
             enemyUnit.currentHP += 9 * difficultyLevel;
             enemyUnit.potions -= 1;
             enemyHUD.SetHP(enemyUnit.currentHP);
-
+            AudioHelper.PlayClip2D(_potiondrink, 1f);
+            enemyUnit.transform.position += new Vector3(0f, 0.25f, 0);
+            yield return new WaitForSeconds(.10f);
+            enemyUnit.transform.position -= new Vector3(0f, 0.25f, 0);
             state = BattleState.PLAYERTURN;
             PlayerTurn();
         }
         else
         {
             dialogueText.text = enemyUnit.name + " attacks!";
-
+            enemyUnit.transform.position -= new Vector3(0.25f, 0f, 0);
+            playerUnit.transform.position += new Vector3(0, .25f, 0);
+            yield return new WaitForSeconds(.10f);
+            enemyUnit.transform.position += new Vector3(0.25f, 0f, 0);
+            playerUnit.transform.position -= new Vector3(0, .50f, 0);
+            yield return new WaitForSeconds(.10f);
+            playerUnit.transform.position += new Vector3(0, .25f, 0);
+            AudioHelper.PlayClip2D(_AttackESound, 1f);
             yield return new WaitForSeconds(1f);
 
             bool isDead = playerUnit.TakeDamage(enemyUnit.Attack);
@@ -221,6 +243,10 @@ public class StateMachine : MonoBehaviour
             dialogueText.text = "You have consumed a health potion!";
             playerUnit.potions -= 1;
             playerHUD.SetPotions(playerUnit.potions);
+            AudioHelper.PlayClip2D(_potiondrink, 1f);
+            playerUnit.transform.position += new Vector3(0f, 0.25f, 0);
+            yield return new WaitForSeconds(.10f);
+            playerUnit.transform.position -= new Vector3(0f, 0.25f, 0);
 
             yield return new WaitForSeconds(2f);
 
